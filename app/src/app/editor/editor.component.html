@@ -1,0 +1,38 @@
+
+<header class="header">
+    
+    <div class="dropdown">
+        <span>Workspace</span>
+        <div class="dropdown-content">
+            <p (click)="workspaceOptionHandle(workspaceAdd.innerHTML)" #workspaceAdd>Add</p>
+            <p (click)="workspaceOptionHandle(workspaceLoad.innerHTML)" #workspaceLoad>Load</p>
+        </div>
+    </div>
+
+    <div class="dropdown">
+        <span>File</span>
+        <div class="dropdown-content">
+            <p (click)="fileOptionHandle(fileAdd.innerHTML)" #fileAdd>Add</p>
+            <p (click)="fileOptionHandle(fileLoad.innerHTML)" #fileLoad>Load</p>
+        </div>
+    </div>
+
+    <span (click)="sync()" class="header-option">Sync</span>
+    <span (click)="userLogOut()" class="logout">LogOut</span>
+
+</header>
+
+<div class="editor-container">
+
+    <div class="workspace-view">
+        <h1>Workspace</h1> 
+
+        <h2>{{currentWorkspace.name}}</h2>
+        <p (click)="loadSelectedFile($event)" *ngFor="let x of mapKeys2Array(currentWorkspace.files)" class="workspace-files">
+            {{x}}
+        </p>
+
+    </div>
+
+    <ngx-monaco-editor style="height: 100%; width: 89%;" [options]="editorOptions" [(ngModel)]="currentWorkspace.fileOpened.code"></ngx-monaco-editor>
+</div>

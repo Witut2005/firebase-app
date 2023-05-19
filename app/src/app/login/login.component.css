@@ -1,0 +1,57 @@
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.login-box, .register-box {
+  background-color: #fff;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  padding: 40px;
+  border-radius: 5px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.login-box h2, .register-box h2 {
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.login-box form, .register-box form {
+  display: flex;
+  flex-direction: column;
+}
+
+.login-box input, .register-box input {
+  padding: 10px;
+  margin-bottom: 15px;
+  border: none;
+  border-radius: 3px;
+  border: 1px solid #ccc;
+}
+
+.form-button{
+  padding: 10px 20px;
+  background-color: #333;
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.form-button:hover {
+  background-color: #555;
+}
+
+.google-icon{
+  height: 30px;
+  width: 30px;
+}
+
+.google-icon:hover{
+  cursor: pointer;
+}

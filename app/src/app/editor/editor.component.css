@@ -1,0 +1,99 @@
+
+/* HEADER */
+
+.header {
+  background-color: #333;
+  color: #fff;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  margin-bottom: 1vh;
+}
+
+.dropdown {
+  position: relative;
+  display: inline-block;
+  margin-right: 1%;
+  cursor: pointer;
+}
+
+.dropdown:hover .dropdown-content {
+  display: block;
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #f9f9f9;
+  min-width: 100px;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+  padding: 12px 16px;
+  z-index: 1;
+}
+
+.dropdown-content p {
+  color: #333;
+  text-decoration: none;
+  display: block;
+  margin: 0;
+  margin-bottom: 5px;
+  cursor: pointer;
+}
+
+.logout {
+  cursor: pointer;
+}  
+
+.header-option{
+  margin-right: 1%;
+}
+
+.header-option:hover{
+  cursor: pointer;
+}
+
+/* ----------------------------- */
+
+.editor-container
+{
+  width: 100vw;
+  height: 90vh;
+  display: flex;
+}
+
+.workspace-view
+{
+  width: 9%;
+  height: 50%;
+  background-color: #333;
+}
+
+.workspace-view>p, .workspace-view>h1, .workspace-view>h2
+{
+  color: white;
+  letter-spacing: 1px;
+}
+
+.workspace-view>h1{
+  letter-spacing: 1px;
+  font-weight: 700;
+}
+
+.workspace-view>h1{
+  letter-spacing: 1px;
+  font-weight: 500;
+}
+
+.workspace-files{
+  border-bottom: 1px white solid;
+  margin-bottom: 1%;
+}
+
+.workspace-files:nth-last-of-type(1){
+  border: 0;
+}
+
+.workspace-files:hover{
+  cursor: pointer;
+  color: white;
+}

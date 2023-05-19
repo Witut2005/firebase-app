@@ -1,0 +1,23 @@
+<div class="container">
+    
+    <div class="login-box">
+      <h2>Login</h2>
+      <form>
+        <input type="text" #email_log placeholder="Username">
+        <input type="password" #pass_log placeholder="Password">
+        <input class="form-button" type="button" (click)="userLog(email_log, pass_log)" value="Login"/>
+      </form>
+      <img class="google-icon" src="https://icons.iconarchive.com/icons/papirus-team/papirus-apps/512/google-icon.png" (click)="userGoogleLog()"/>
+    </div>
+
+    <div class="register-box">
+      <h2>Register</h2>
+      <form>
+        <input type="email" #email_reg placeholder="Email">
+        <input type="password" #pass_reg1 placeholder="Password">
+        <input type="password" #pass_reg2 placeholder="Confirm Password">
+        <input class="form-button" type="button" (click)="userRegister(email_reg, pass_reg1, pass_reg2)" value="Register"/>
+      </form>
+    </div>
+
+</div>
