@@ -2,10 +2,8 @@ import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { User } from 'firebase/auth';
 import { getDatabase, ref, child, get, set, update, push } from "firebase/database";
+import { DatabaseService } from 'src/database.service';
 import { userGet } from 'src/user';
-import * as firebase from 'firebase/app';
-import 'firebase/database';import 'firebase/database';
-import { StreamableFile } from '@nestjs/common';
 
 type Workspace = {
   name: string,
@@ -26,11 +24,19 @@ export class EditorComponent {
 
   userLogged: User;
   currentWorkspace: Workspace; 
+  userWorkspacesNames: string[] = [];
   db = getDatabase();
 
-  constructor(private router: Router)
+  constructor(private router: Router, public communication: DatabaseService)
   {
     this.currentWorkspace = {name: '', files: new Map<string,string>(), fileOpened: {name:'', code: ''}};
+    
+    
+    this.communication.workspacesAvailableNamesGet().then((data)=>{
+      this.userWorkspacesNames = data;
+      console.log(this.userWorkspacesNames);
+    });
+
 
     this.userLogged = userGet() as User;
     if(this.userLogged == null)
@@ -51,8 +57,10 @@ export class EditorComponent {
     return Array.from(map.keys());
   }
 
-  async synchronizeFileWithDb(filename: string)
+  async synchronizeFileWithDb(filename: string): Promise<void>
   {
+    if(filename == '')
+      return;
     // console.log('UPDATE', (this.userLogged.uid + '/' + this.currentWorkspace.name + '/' + filename).replaceAll(' ', ''));
     await update(ref(this.db, (this.userLogged.uid + '/' + this.currentWorkspace.name + '/' + filename).replaceAll(' ', '')), {code: this.currentWorkspace.fileOpened.code});
 
@@ -97,31 +105,56 @@ export class EditorComponent {
     this.synchronizeFileWithDb(this.currentWorkspace.fileOpened.name);
   }
 
-  async workspaceReadFromDb(workspace: string)
+  // async workspaceReadFromDb(workspace: string, changeWorkpaceAutomatically: boolean = false)
+  // {
+  //   console.log(this.userLogged.uid + '/' + workspace + '/');
+
+  //   const path = this.userLogged.uid + '/' + workspace + '/';
+
+  //   get(child(ref(this.db), path)).then((snapshot) => {
+  //     if (snapshot.exists()) {
+  //       // console.log('SNAPSHOT', snapshot.val());
+  //       const data = snapshot.val()
+
+  //       this.currentWorkspace.files.clear();
+        
+  //       if(changeWorkpaceAutomatically)
+  //         this.currentWorkspace.name = workspace;
+
+  //       for(let x in data)
+  //       {
+  //         if(x == 'WORKSPACE')
+  //           continue;
+  //         console.log(x)
+  //         this.currentWorkspace.files.set(x, data[x].code)
+  //       }
+
+  //     } else {
+  //       console.log("No data available");
+  //     }
+  //   }).catch((error) => {
+  //     console.error(error);
+  //   });
+
+  // }
+
+  async workspaceOpen(workspaceName: string)
   {
-    console.log(this.userLogged.uid + '/' + workspace + '/');
 
-    const path = this.userLogged.uid + '/' + workspace + '/';
+    this.sync();
 
-    get(child(ref(this.db), path)).then((snapshot) => {
-      if (snapshot.exists()) {
-        // console.log('SNAPSHOT', snapshot.val());
-        const data = snapshot.val()
+    this.currentWorkspace.files.clear();
+    this.currentWorkspace.files = await this.communication.workspaceRead(workspaceName);
+    this.currentWorkspace.name = workspaceName;
 
-        for(let x in data)
-        {
-          if(x == 'WORKSPACE')
-            continue;
-          console.log(x)
-          this.currentWorkspace.files.set(x, data[x].code)
-        }
-      } else {
-        console.log("No data available");
-      }
-    }).catch((error) => {
-      console.error(error);
-    });
-
+    // Open with first file detected
+    this.currentWorkspace.fileOpened.name = this.map2Array(this.currentWorkspace.files)[0][0] //name
+    this.currentWorkspace.fileOpened.code = this.map2Array(this.currentWorkspace.files)[0][1] //code 
+  }
+  
+  workspaceChange(workspace: string)
+  {
+    this.currentWorkspace.name = workspace;
   }
 
   async writeDataToDb<T>(path: string, dataToWrite: T): Promise<void>
@@ -155,31 +188,17 @@ export class EditorComponent {
   {
     if (option == 'Add')
     {
-      this.currentWorkspace.name = String(prompt('Type workspace name')).replaceAll(' ', '');
+      const newWorkspaceName = String(prompt('Type workspace name')).replaceAll(' ', '');
 
-      if(this.currentWorkspace.name == null)
+      if(newWorkspaceName == 'null')
         return;
 
-      await this.writeDataToDb(this.userLogged.uid + '/' + this.currentWorkspace.name, {WORKSPACE: this.currentWorkspace.name})
+      await this.writeDataToDb(this.userLogged.uid + '/' + newWorkspaceName, {WORKSPACE: this.currentWorkspace.name})
+
+      this.workspaceOpen(newWorkspaceName)
+      this.userWorkspacesNames.push(newWorkspaceName)
     }
 
-    else if(option == 'Load')
-    {
-      const workspaceName = String(prompt('Workspace to load'));
-      
-      if(workspaceName == null)
-        return;
-
-      await this.workspaceReadFromDb(workspaceName);
-
-      this.currentWorkspace.name = workspaceName;
-      
-      console.log(this.map2Array(this.currentWorkspace.files)[0])
-      this.currentWorkspace.fileOpened.name = this.map2Array(this.currentWorkspace.files)[0][0] //name
-      this.currentWorkspace.fileOpened.code = this.map2Array(this.currentWorkspace.files)[0][1] //code 
-
-      console.log('NEW MAIN FILE', this.currentWorkspace.fileOpened.name)
-    }
   }
 
   async fileOptionHandle(option: string)
@@ -192,7 +211,7 @@ export class EditorComponent {
         return;
 
       await this.addNewFileToDb(this.currentWorkspace.name, filename);
-      await this.workspaceReadFromDb(this.currentWorkspace.name);
+      await this.workspaceOpen(this.currentWorkspace.name);
 
       this.currentWorkspace.fileOpened.name = filename;
       this.currentWorkspace.fileOpened.code = this.currentWorkspace.files.get(filename) as string;
@@ -206,7 +225,7 @@ export class EditorComponent {
 
   userLogOut():void
   {
-
+    this.router.navigateByUrl('login');
   }
 
 }
