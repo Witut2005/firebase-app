@@ -4,15 +4,8 @@ import { User } from 'firebase/auth';
 import { getDatabase, ref, child, get, set, update, push } from "firebase/database";
 import { DatabaseService } from 'src/database.service';
 import { userGet } from 'src/user';
+import { Workspace } from 'src/workspace';
 
-type Workspace = {
-  name: string,
-  files: Map<string, string>,
-  fileOpened: {
-    name: string,
-    code: string
-  }
-};
 
 @Component({
   selector: 'app-editor',
@@ -57,15 +50,6 @@ export class EditorComponent {
     return Array.from(map.keys());
   }
 
-  async synchronizeFileWithDb(filename: string): Promise<void>
-  {
-    if(filename == '')
-      return;
-    // console.log('UPDATE', (this.userLogged.uid + '/' + this.currentWorkspace.name + '/' + filename).replaceAll(' ', ''));
-    await update(ref(this.db, (this.userLogged.uid + '/' + this.currentWorkspace.name + '/' + filename).replaceAll(' ', '')), {code: this.currentWorkspace.fileOpened.code});
-
-  }
-
   async loadFileDataFromDb(workspace: string, filename: string)
   {
     console.log('LOADING', this.userLogged.uid + '/' + workspace + '/' + filename);
@@ -88,55 +72,23 @@ export class EditorComponent {
   async loadSelectedFile(event: any)
   {
 
-    if(this.currentWorkspace.fileOpened.name == event.srcElement.innerHTML)
-      return;
+    this.fileOpen(this.currentWorkspace.name, event.target.innerHTML);
+    // if(this.currentWorkspace.fileOpened.name == event.srcElement.innerHTML)
+    //   return;
 
-    this.sync();
+    // this.sync();
 
-    const filename = event.srcElement.innerHTML.replaceAll(' ', '');
-    await this.loadFileDataFromDb(this.currentWorkspace.name, filename);
+    // const filename = event.srcElement.innerHTML.replaceAll(' ', '');
+    // await this.communication.fileLoad(this.currentWorkspace, filename)
 
-    this.currentWorkspace.fileOpened.name = event.srcElement.innerHTML as string;
-    this.currentWorkspace.fileOpened.code = this.currentWorkspace.files.get(filename) as string;
+    // this.currentWorkspace.fileOpened.name = event.srcElement.innerHTML as string;
+    // this.currentWorkspace.fileOpened.code = this.currentWorkspace.files.get(filename) as string;
   }
 
   sync()
   {
-    this.synchronizeFileWithDb(this.currentWorkspace.fileOpened.name);
+    this.communication.openedFileSynchronize(this.currentWorkspace);
   }
-
-  // async workspaceReadFromDb(workspace: string, changeWorkpaceAutomatically: boolean = false)
-  // {
-  //   console.log(this.userLogged.uid + '/' + workspace + '/');
-
-  //   const path = this.userLogged.uid + '/' + workspace + '/';
-
-  //   get(child(ref(this.db), path)).then((snapshot) => {
-  //     if (snapshot.exists()) {
-  //       // console.log('SNAPSHOT', snapshot.val());
-  //       const data = snapshot.val()
-
-  //       this.currentWorkspace.files.clear();
-        
-  //       if(changeWorkpaceAutomatically)
-  //         this.currentWorkspace.name = workspace;
-
-  //       for(let x in data)
-  //       {
-  //         if(x == 'WORKSPACE')
-  //           continue;
-  //         console.log(x)
-  //         this.currentWorkspace.files.set(x, data[x].code)
-  //       }
-
-  //     } else {
-  //       console.log("No data available");
-  //     }
-  //   }).catch((error) => {
-  //     console.error(error);
-  //   });
-
-  // }
 
   async workspaceOpen(workspaceName: string)
   {
@@ -152,36 +104,19 @@ export class EditorComponent {
     this.currentWorkspace.fileOpened.code = this.map2Array(this.currentWorkspace.files)[0][1] //code 
   }
   
+  async fileOpen(workspaceName: string, filename: string)
+  {
+    this.workspaceOpen(workspaceName);
+    const fileData = await this.communication.fileLoad(this.currentWorkspace, filename);
+
+    console.log('file', fileData);
+    this.currentWorkspace.fileOpened.name = fileData.name;
+    this.currentWorkspace.fileOpened.code = fileData.code;
+  }
+
   workspaceChange(workspace: string)
   {
     this.currentWorkspace.name = workspace;
-  }
-
-  async writeDataToDb<T>(path: string, dataToWrite: T): Promise<void>
-  {
-    const db = getDatabase();
-    await set(ref(db, path), dataToWrite);
-  }
-
-  async addNewFileToDb(workspace: string, filename: string)
-  {
-    const db = getDatabase();
-
-    // Get a key for a new Post.
-    const newEntryKey = push(child(ref(db), workspace)).key;
-    console.log(newEntryKey)
-
-    const updates = {};
-    // @ts-ignore
-    updates[this.userLogged.uid + '/' + workspace + '/' + filename] = {code: ''};
-    // @ts-ignore
-    // updates[path + '/' + newEntryKey] = dataToUpdate;
-
-    console.log(updates)
-  
-    // Write the new post's data simultaneously in the posts list and the user's post list.
-    update(ref(db), updates);
-
   }
 
   async workspaceOptionHandle(option: string)
@@ -193,9 +128,9 @@ export class EditorComponent {
       if(newWorkspaceName == 'null')
         return;
 
-      await this.writeDataToDb(this.userLogged.uid + '/' + newWorkspaceName, {WORKSPACE: this.currentWorkspace.name})
+      await this.communication.workspaceAdd(newWorkspaceName)
+      await this.workspaceOpen(newWorkspaceName)
 
-      this.workspaceOpen(newWorkspaceName)
       this.userWorkspacesNames.push(newWorkspaceName)
     }
 
@@ -205,12 +140,19 @@ export class EditorComponent {
   {
     if (option == 'Add')
     {
+
+      if(this.currentWorkspace.name == '')
+      {
+        alert('You must firstly create a new workspace');
+        return;
+      }
+
       const filename = prompt('Type filename to add');
       
       if(filename == null)
         return;
 
-      await this.addNewFileToDb(this.currentWorkspace.name, filename);
+      await this.communication.fileAdd(this.currentWorkspace, filename);
       await this.workspaceOpen(this.currentWorkspace.name);
 
       this.currentWorkspace.fileOpened.name = filename;
